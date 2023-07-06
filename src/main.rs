@@ -1,14 +1,14 @@
 use std::{env ,  process ,fs, error};
 fn main() {
-    let args : Vec<String> = env::args().collect();
-let config = Config::new(&args).unwrap_or_else(| err| {
-    println!("problem parsing arguments: {}", err);
+
+let config = Config::new(env::args()).unwrap_or_else(| err| {
+    eprintln!("problem parsing arguments: {}", err);
     process::exit(1);
 });
     println!("LOOKING FOR {}", config.q);
     println!("in file {}", config.filename);
 if let Err(e) =run(config) {
-    println!("app error: {}", e);
+    eprintln!("app error: {}", e);
     process::exit(1);
 };
 }
@@ -21,14 +21,25 @@ if let Err(e) =run(config) {
  struct  Config {
      q : String,
      filename : String,
+     case_sensitive : bool,
 }
 impl Config {
-     fn new(args : &[String]) -> Result<Config, &str> {
-        if args.len() <= 3 {
-            return Err("not enough arguments")
-        }
-        let q = args[1].clone();
-        let filename = args[2].clone();
-        Ok(Config { q, filename })
+     fn new( mut args : env::Args) -> Result<Config, &'static str> {
+    args.next();
+         let q = match args.next() {
+             Some(args) => args,
+             None => return Err("didnt get a query string")
+     };
+
+         let filename = match args.next() {
+             Some(args) => args,
+             None => return Err("didnt get a query string")
+         };
+         let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
+        Ok(Config { q, filename , case_sensitive})
     }
+}
+
+pub fn search<'a>(q : &str , content: &'a str ) -> Vec<&'a str>{
+content.lines().filter(|line| line.contains(q)).collect()
 }
